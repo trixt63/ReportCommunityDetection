@@ -3,7 +3,7 @@ from pymongo import MongoClient, UpdateOne
 
 from config import MongoDBConfig
 
-WALLETS_COL = 'lendingWallets'
+WALLETS_COL = 'depositWallets'
 
 
 class MongoDB:
@@ -56,11 +56,16 @@ class MongoDB:
         except Exception as ex:
             print(ex)
 
+    def get_wallets(self, _filter, _projection):
+        data = self.wallets_col.find(_filter, _projection)
+        return data
+
     def count_wallets(self, filter):
         _count = self.wallets_col.count_documents(filter)
         return _count
 
-    def count_deployed_chains_of_project(self, field_id, project_id, chain_id='0x38'):
+    def count_wallets_each_chain(self, field_id, project_id, chain_id='0x38'):
+        """Count number of wallets of each project on each chain"""
         _filter = {f"{field_id}.{project_id}": {"$exists": 1}}
         _projection = {f"{field_id}.{project_id}": 1}
         deployments = self.wallets_col.find(_filter, _projection)
@@ -69,6 +74,13 @@ class MongoDB:
             for project in _depl[field_id][project_id]:
                 if project['chainId'] == chain_id:
                     _count += 1
-                    # continue
-
+                    continue
         return _count
+
+    def count_exchange_deposit_wallets_each_chain(self, field_id, project_id, chain_id='0x38'):
+        """Each CEX project stores a list of chain_ids, instead a list of objects like other type of project,
+        so I need a separate function to handle this"""
+        _filter = {f"{field_id}.{project_id}": chain_id}
+        _count = self.wallets_col.count_documents(_filter)
+        return _count
+

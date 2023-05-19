@@ -29,21 +29,21 @@ load_dotenv()
 #     DATABASE = 'klg_database'
 #     GRAPH = 'knowledge_graph'
 
-# class PostgresDBConfig:
-#     SCHEMA = os.environ.get("POSTGRES_SCHEMA", "public")
-#     TRANSFER_EVENT_TABLE = os.environ.get("POSTGRES_TRANSFER_EVENT_TABLE", "transfer_event")
-#     CONNECTION_URL = os.environ.get("POSTGRES_CONNECTION_URL", "postgresql://user:password@localhost:5432/database")
+class PostgresDBConfig:
+    SCHEMA = os.environ.get("POSTGRES_SCHEMA", "public")
+    TRANSFER_EVENT_TABLE = os.environ.get("POSTGRES_TRANSFER_EVENT_TABLE", "transfer_event")
+    CONNECTION_URL = os.environ.get("POSTGRES_CONNECTION_URL", "postgresql://user:password@localhost:5432/database")
 
 
-# class BlockchainETLConfig:
-#     HOST = os.getenv("BLOCKCHAIN_ETL_HOST")
-#     PORT = os.getenv("BLOCKCHAIN_ETL_PORT")
-#     USERNAME = os.getenv("BLOCKCHAIN_ETL_USERNAME")
-#     PASSWORD = os.getenv("BLOCKCHAIN_ETL_PASSWORD")
+class BlockchainETLConfig:
+    HOST = os.getenv("BLOCKCHAIN_ETL_HOST")
+    PORT = os.getenv("BLOCKCHAIN_ETL_PORT")
+    USERNAME = os.getenv("BLOCKCHAIN_ETL_USERNAME")
+    PASSWORD = os.getenv("BLOCKCHAIN_ETL_PASSWORD")
 
-#     CONNECTION_URL = os.getenv("BLOCKCHAIN_ETL_CONNECTION_URL") or f"mongodb://{USERNAME}:{PASSWORD}@{HOST}:{PORT}"
-#     DATABASE = 'blockchain_etl'
-#     DB_PREFIX = os.getenv("DB_PREFIX")
+    CONNECTION_URL = os.getenv("BLOCKCHAIN_ETL_CONNECTION_URL") or f"mongodb://{USERNAME}:{PASSWORD}@{HOST}:{PORT}"
+    DATABASE = 'blockchain_etl'
+    DB_PREFIX = os.getenv("DB_PREFIX")
 
 
 class MongoDBConfig:
@@ -51,9 +51,9 @@ class MongoDBConfig:
     DATABASE = os.getenv("MONGODB_DATABASE")
 
 
-# class MongoDBEntityConfig:
-#     CONNECTION_URL = os.getenv("MONGODB_ENTITY_CONNECTION_URL")
-#     DATABASE = os.getenv("MONGODB_ENTITY_DATABASE", "knowledge_graph")
+class MongoDBEntityConfig:
+    CONNECTION_URL = os.getenv("MONGODB_ENTITY_CONNECTION_URL")
+    DATABASE = os.getenv("MONGODB_ENTITY_DATABASE", "knowledge_graph")
 
 # class MongoLendingConfig:
 #     HOST = os.getenv("MONGO_LENDING_HOST")
