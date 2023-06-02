@@ -3,7 +3,7 @@ from pymongo import MongoClient, UpdateOne
 
 from config import MongoDBConfig
 
-WALLETS_COL = 'lpOwners'
+WALLETS_COL = 'lendingWallets'
 
 
 class MongoDB:
