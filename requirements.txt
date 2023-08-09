@@ -1,5 +1,10 @@
-pymongo==4.3.3
-seaborn
-python-dotenv
-sqlalchemy
+#ipykernel
+multithread-parallel-processing==1.0.0
+notebook
+pandas
 psycopg2
+pymongo==4.3.3
+python-dotenv
+python-cli-scheduler
+seaborn
+sqlalchemy

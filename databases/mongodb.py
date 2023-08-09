@@ -17,45 +17,45 @@ class MongoDB:
         self._db = self.connection[MongoDBConfig.DATABASE]
         self.lp_tokens_col = self._db['lpTokens']
         self.wallets_col = self._db[WALLETS_COL]
+        self._groups_col = self._db['groups']
 
-        self._create_index()
-
-    def _create_index(self):
-        if 'wallets_number_of_txs_index_1' not in self.wallets_col.index_information():
-            self.wallets_col.create_index([('number_of_txs', 1)], name='wallets_number_of_txs_index_1')
-
-    def update_wallets(self, wallets: List[dict]):
-        try:
-            wallet_updates_bulk = []
-            for wallet in wallets:
-                wallet['_id'] = wallet['address']
-                # pop all information besides data about lendings/dex/deposit/...
-                wallet_base_data = {
-                    '_id': wallet.pop('_id'),
-                    'address': wallet.pop('address'),
+    #######################
+    #  Generate dataset   #
+    #######################
+    def get_groups_by_num_wallets(self, chain_id, num_user_cond: dict or int, num_depo_cond: dict or int):
+        pipeline = [
+            {
+                '$match': {
+                    'num_user': num_user_cond,
+                    'num_depo': num_depo_cond,
+                    'Chain': chain_id
                 }
-                tags = wallet.pop('tags')
-
-                # process query to update nested documents for data about lendings/dex/deposit/...
-                field_name = list(wallet.keys())[0]  # 'lendingPools' or 'tradedLPs' or 'exchangesDeposited'...
-                project_names = list(wallet[field_name].keys())  # project id
-                # update nested documents
-                _mongo_add_to_set_query = {f"{field_name}.{project_name}": {"$each": wallet[field_name][project_name]}
-                                           for project_name in project_names}
-                _mongo_add_to_set_query["tags"] = {'$each': tags}
-
-                # add update query into bulk
-                _filter = {'_id': wallet_base_data['_id']}
-                _update = {
-                    '$set': wallet_base_data,
-                    '$addToSet': _mongo_add_to_set_query
+            },
+            {
+                '$sort': {
+                    'num_user': -1
                 }
-                wallet_updates_bulk.append(UpdateOne(filter=_filter, update=_update, upsert=True))
+            }
+        ]
+        result = self._groups_col.aggregate(pipeline)
+        return result
 
-            self.wallets_col.bulk_write(wallet_updates_bulk)
-        except Exception as ex:
-            print(ex)
+    #######################
+    #    Check dataset    #
+    #######################
+    def get_lending_wallet(self, address):
+        return self._db['lendingWallets'].find_one({'_id': address})
+        # return address
 
+    def get_lp_deployer_wallet(self, address):
+        return self._db['lpDeployers'].find_one({'_id': address})
+
+    def get_lp_trader_wallet(self, address):
+        return self._db['lpTraders'].find_one({'_id': address})
+
+    #######################
+    #      Analytics      #
+    #######################
     def get_wallets(self, _filter, _projection):
         data = self.wallets_col.find(_filter, _projection)
         return data
