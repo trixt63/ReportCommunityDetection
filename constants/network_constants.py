@@ -21,33 +21,62 @@ class Chains:
     ethereum = '0x1'
     fantom = '0xfa'
     polygon = '0x89'
-    all = [bsc, ethereum, fantom, polygon]
+    arbitrum = '0xa4b1'
+    optimism = '0xa'
+    avalanche = '0xa86a'
+    none_wrapped_token = [arbitrum, fantom, optimism]
+    all = [bsc, ethereum, fantom, polygon, arbitrum, optimism, avalanche]
     mapping = {
         'bsc': bsc,
         'ethereum': ethereum,
         'fantom': fantom,
-        'polygon': polygon
+        'polygon': polygon,
+        'arbitrum': arbitrum,
+        'optimism': optimism,
+        'avalanche': avalanche
     }
 
     names = {
         bsc: 'bsc',
         ethereum: "ethereum",
         fantom: 'fantom',
-        polygon: 'polygon'
+        polygon: 'polygon',
+        arbitrum: 'arbitrum',
+        optimism: 'optimism',
+        avalanche: 'avalanche'
     }
 
     abi_mapping = {
         bsc: 'bep20_abi',
         ethereum: 'erc20_abi',
         fantom: 'erc20_abi',
-        polygon: 'erc20_abi'
+        polygon: 'erc20_abi',
+        arbitrum: 'erc20_abi',
+        optimism: 'erc20_abi',
+        avalanche: 'erc20_abi'
     }
 
     block_time = {
         bsc: 3,
         ethereum: 12,
         fantom: 1,
-        polygon: 2
+        polygon: 2,
+        arbitrum: 0.3,
+        avalanche: 2
+    }
+    wrapped_native_token = {
+        bsc: "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+        ethereum: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        polygon: "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
+        fantom: "0x21be370d5312f44cb42ce377bc9b8a0cef1a4c83",
+        arbitrum: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+        optimism: "0x4200000000000000000000000000000000000006",
+        avalanche: "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7"
+    }
+
+    evm = {
+        ethereum: True, bsc: True, polygon: True, fantom: True,
+        arbitrum: True, optimism: True, avalanche: True
     }
 
     def get_abi_name(self, chain_id):

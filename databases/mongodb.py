@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from pymongo import MongoClient, UpdateOne
 
 from config import MongoDBConfig
@@ -69,6 +69,13 @@ class MongoDB:
         ]
 
         return self._users_col.aggregate(pipeline)
+
+    def update_transactions(self, chain_id, data: List[Dict]):
+        bulk_updates = [
+            UpdateOne({'_id': datum['_id']}, {'$set': datum}, upsert=True)
+            for datum in data
+        ]
+        self._db[f"{chain_id}_transactions"].bulk_write(bulk_updates)
 
     #######################
     #    Check dataset    #
