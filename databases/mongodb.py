@@ -18,6 +18,7 @@ class MongoDB:
         self.lp_tokens_col = self._db['lpTokens']
         self.wallets_col = self._db[WALLETS_COL]
         self._groups_col = self._db['groups']
+        self._users_col = self._db['users']
 
     #######################
     #  Generate dataset   #
@@ -39,6 +40,35 @@ class MongoDB:
         ]
         result = self._groups_col.aggregate(pipeline)
         return result
+
+    def get_groups_by_twitter(self):
+        pipeline = [
+            {
+                '$match': {
+                    'twitter': {
+                        '$ne': ''
+                    }
+                }
+            }, {
+                '$group': {
+                    '_id': '$twitter',
+                    'numberOfAddresses': {
+                        '$count': {}
+                    },
+                    'addresses': {
+                        '$addToSet': '$address'
+                    }
+                }
+            }, {
+                '$match': {
+                    'numberOfAddresses': {
+                        '$gt': 1
+                    }
+                }
+            }
+        ]
+
+        return self._users_col.aggregate(pipeline)
 
     #######################
     #    Check dataset    #
