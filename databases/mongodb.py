@@ -7,7 +7,7 @@ WALLETS_COL = 'lendingWallets'
 
 
 class MongoDB:
-    def __init__(self, connection_url=None):
+    def __init__(self, connection_url=None, chain_id: str = ""):
         if not connection_url:
             connection_url = MongoDBConfig.CONNECTION_URL
 
@@ -19,6 +19,8 @@ class MongoDB:
         self.wallets_col = self._db[WALLETS_COL]
         self._groups_col = self._db['groups']
         self._users_col = self._db['users']
+
+        self._transactions_col = self._db[f'{chain_id}_transactions']
 
     #######################
     #  Generate dataset   #
@@ -77,12 +79,25 @@ class MongoDB:
         ]
         self._db[f"{chain_id}_transactions"].bulk_write(bulk_updates)
 
+    def get_native_transfers_relate_to_addresses(self, addresses):
+        filter_ = {
+            "$or": [
+                {"from_address": {'$in': addresses}},
+                {"to_address": {'$in': addresses}}
+            ],
+            "input": "0x",
+            "value": {"$ne": "0"},
+            "receipt_status": 1
+        }
+        projection = ['to_address', 'from_address', 'value', 'block_number', 'block_timestamp']
+        cursor = self._transactions_col.find(filter_, projection=projection).batch_size(10000)
+        return cursor
+
     #######################
     #    Check dataset    #
     #######################
     def get_lending_wallet(self, address):
         return self._db['lendingWallets'].find_one({'_id': address})
-        # return address
 
     def get_lp_deployer_wallet(self, address):
         return self._db['lpDeployers'].find_one({'_id': address})

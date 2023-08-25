@@ -1,28 +1,35 @@
-import pandas as pd
-from multithread_processing.base_job import BaseJob
+import os
+import sys
+sys.path.append(os.path.dirname(sys.path[0]))
 
-from databases.mongodb import MongoDB
-from databases.mongodb_entity import MongoDBEntity
-from src.scripts.transactions_retriever import TransactionsRetriever
+import pandas as pd
+from typing import List, Dict
+
+from src.scripts.transactions_retriever import TransactionsFeatures
 
 
 def main():
-    df = pd.read_csv('../../data/0x38_wallets_pairs.csv')
+    chain_id = '0x38'
+    df = pd.read_csv(f'../../data/{chain_id}_wallets_pairs.csv')
+
+    # encode transactions feature
+    print("Encode Transactions Features for x")
     x_wallets = list(df['x'])
+    x_transactions_features = _encode_transactions_feature(x_wallets, chain_id=chain_id)
+    x_transactions_features.to_csv(f'../../data/transactions_features_{chain_id}_x.csv')
+    print("Encode Transactions Features for y")
     y_wallets = list(df['y'])
-    # end_block = 28705800
-    end_block = 28705
+    y_transactions_features = _encode_transactions_feature(y_wallets, chain_id=chain_id)
+    y_transactions_features.to_csv(f'../../data/transactions_features_{chain_id}_y.csv')
 
-    transactions_retriever = TransactionsRetriever(wallets_list=x_wallets,
-                                                   end_block=end_block,
-                                                   batch_size=100,
-                                                   max_workers=8,
-                                                   chain_id='0x38')
 
+def _encode_transactions_feature(wallets_list, chain_id) -> pd.DataFrame:
+    transactions_retriever = TransactionsFeatures(wallets_list=wallets_list,
+                                                  batch_size=1000,
+                                                  max_workers=8,
+                                                  chain_id=chain_id)
     transactions_retriever.run()
-    df_output = transactions_retriever.return_result()
-    df_output.describe()
-    df_output.to_csv('../../data/0x38/x_transactions_features.csv')
+    return transactions_retriever.return_result()
 
 
 if __name__ == '__main__':
