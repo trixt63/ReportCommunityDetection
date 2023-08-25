@@ -2,18 +2,15 @@ from typing import Dict, List
 from multithread_processing.base_job import BaseJob
 import pandas as pd
 
-from constants.network_constants import Chains
-from databases.blockchain_etl import BlockchainETL
 from databases.mongodb import MongoDB
 
 DECIMALS = 10**18
 
 
-class TransactionsRetriever(BaseJob):
-    def __init__(self, wallets_list: list, end_block: int, chain_id: str,
-                 max_workers: int = 16, batch_size: int = 1000):
+class TransactionsFeatures(BaseJob):
+    def __init__(self, wallets_list: list, chain_id: str,
+                 max_workers: int = 8, batch_size: int = 1000):
         self.wallets_list = wallets_list
-        self.end_block = end_block
 
         self.wallets_data = {
             wallet_addr: {
@@ -25,76 +22,38 @@ class TransactionsRetriever(BaseJob):
             for wallet_addr in wallets_list
         }
 
-        self.mongodb = MongoDB()
-
         self.chain_id = chain_id
-        _db_prefix = ""
-        if chain_id != '0x38':
-            _db_prefix = Chains.names[chain_id]
-        self.blockchain_etl = BlockchainETL(db_prefix=_db_prefix)
+        self.mongodb = MongoDB(chain_id=chain_id)
 
-        super().__init__(work_iterable=list(range(self.end_block)),
+        super().__init__(work_iterable=wallets_list,
                          max_workers=max_workers,
                          batch_size=batch_size)
 
     def _execute_batch(self, works):
-        from_block = works[0]
-        to_block = works[-1]
-        for address in self.wallets_list:
-            retrieved_transactions = list(self.blockchain_etl.get_transactions_relate_to_address(address=address,
-                                                                                                 from_block=from_block,
-                                                                                                 to_block=to_block))
+        native_transactions = self.mongodb.get_native_transfers_relate_to_addresses(works)
+        for tx in native_transactions:
+            tx_value = float(tx['value']) / DECIMALS
+            if tx['from_address'] in works:
+                self._extract_data_from_tx(sent_or_received='sent',
+                                           wallet_address=tx['from_address'],
+                                           other_address=tx['to_address'],
+                                           tx_value=tx_value)
+            elif tx['to_address'] in works:
+                self._extract_data_from_tx(sent_or_received='received',
+                                           wallet_address=tx['to_address'],
+                                           other_address=tx['from_address'],
+                                           tx_value=tx_value)
 
-            self.mongodb.update_transactions(chain_id=self.chain_id, data=retrieved_transactions)
+    def _extract_data_from_tx(self, sent_or_received: str, wallet_address: str, other_address: str, tx_value):
+        self.wallets_data[wallet_address][f'unique_{sent_or_received}'].add(other_address)
+        self.wallets_data[wallet_address][f'eth_{sent_or_received}']['count'] += 1
+        self.wallets_data[wallet_address][f'eth_{sent_or_received}']['sum'] += tx_value
+        self.wallets_data[wallet_address][f'eth_{sent_or_received}']['min'] = min(self.wallets_data[wallet_address][f'eth_{sent_or_received}']['min'],
+                                                                   tx_value)
+        self.wallets_data[wallet_address][f'eth_{sent_or_received}']['max'] = max(self.wallets_data[wallet_address][f'eth_{sent_or_received}']['max'],
+                                                                   tx_value)
 
-            # sent_transactions = list(self.blockchain_etl.get_to_transactions(from_address=address, from_block=from_block, to_block=to_block))
-            # received_transactions = list(self.blockchain_etl.get_from_transactions(to_address=address, from_block=from_block, to_block=to_block))
-
-            # # Unique sent
-            # unique_sent_addresses = {tx['to_address'] for tx in sent_transactions}
-            # self.wallets_data[address]['unique_sent'].union(unique_sent_addresses)
-            # # Native token amount sent
-            # count_eth_sent = sum(1 for tx in sent_transactions if tx['value'] > 0)
-            # if count_eth_sent > 0:
-            #     tx_values = [float(tx['value']) / DECIMALS for tx in sent_transactions if tx['value'] > 0]
-            #     sum_eth_sent = sum(tx_values)
-            #     max_eth_sent = max(tx_values)
-            #     min_eth_sent = min(tx_values)
-            # else:
-            #     sum_eth_sent = 0
-            #     max_eth_sent = 0
-            #     min_eth_sent = float('inf')
-            # self.wallets_data[address]['eth_sent']['count'] += count_eth_sent
-            # self.wallets_data[address]['eth_sent']['sum'] += sum_eth_sent
-            # self.wallets_data[address]['eth_sent']['min'] = min(self.wallets_data[address]['eth_sent']['min'],
-            #                                                     min_eth_sent)
-            # self.wallets_data[address]['eth_sent']['max'] = max(self.wallets_data[address]['eth_sent']['max'],
-            #                                                     max_eth_sent)
-            #
-            # # Unique received
-            # unique_received_addresses = {tx['from_address'] for tx in received_transactions}
-            # self.wallets_data[address]['unique_received'].union(unique_received_addresses)
-            # # Native token amount received
-            # count_eth_received = sum(1 for tx in received_transactions if tx['value'] > 0)
-            # if count_eth_received > 0:
-            #     tx_values = [float(tx['value'])/DECIMALS for tx in received_transactions if tx['value'] > 0]
-            #     sum_eth_received = sum(tx_values)
-            #     max_eth_received = max(tx_values)
-            #     min_eth_received = min(tx_values)
-            # else:
-            #     sum_eth_received = 0
-            #     max_eth_received = 0
-            #     min_eth_received = float('inf')
-            # self.wallets_data[address]['eth_received']['count'] += count_eth_received
-            # self.wallets_data[address]['eth_received']['sum'] += sum_eth_received
-            # self.wallets_data[address]['eth_received']['min'] = min(self.wallets_data[address]['eth_received']['min'],
-            #                                                         min_eth_received)
-            # self.wallets_data[address]['eth_received']['max'] = max(self.wallets_data[address]['eth_received']['max'],
-            #                                                         max_eth_received)
-
-        print(f"Calculate to block {from_block} to {to_block} / {self.end_block}")
-
-    def return_result(self):
+    def return_result(self) -> pd.DataFrame:
         result = [
             {
                 'address': address,
@@ -102,12 +61,12 @@ class TransactionsRetriever(BaseJob):
                 'unique_sent': len(wallet_datum['unique_sent']),
                 'min_coin_sent': wallet_datum['eth_sent']['min'],
                 'max_coin_sent': wallet_datum['eth_sent']['max'],
-                # 'avg_coin_sent': wallet_datum['eth_sent']['sum'] / wallet_datum['eth_sent']['count'],
+                'avg_coin_sent': 0,
                 # received
                 'unique_received': len(wallet_datum['unique_received']),
                 'min_coin_received': wallet_datum['eth_received']['min'],
                 'max_coin_received': wallet_datum['eth_received']['max'],
-                # 'avg_coin_received': wallet_datum['eth_received']['sum'] / wallet_datum['eth_received']['count'],
+                'avg_coin_received': 0
             }
             for address, wallet_datum in self.wallets_data.items()
         ]
@@ -116,27 +75,14 @@ class TransactionsRetriever(BaseJob):
             if wallet_datum['min_coin_sent'] == float('inf'):
                 wallet_datum['min_coin_sent'] = 0
 
+            if wallet_datum['min_coin_received'] == float('inf'):
+                wallet_datum['min_coin_received'] = 0
+
             address = wallet_datum['address']
-            if self.wallets_data[address]['eth_sent']['count'] > 0:
-                wallet_datum['avg_coin_sent'] = self.wallets_data[address]['eth_sent']['sum'] / \
-                                                self.wallets_data[address]['eth_sent']['count'],
             if self.wallets_data[address]['eth_received']['count'] > 0:
                 wallet_datum['avg_coin_received'] = self.wallets_data[address]['eth_received']['sum'] / \
-                                                self.wallets_data[address]['eth_received']['count'],
-
+                                                self.wallets_data[address]['eth_received']['count']
+            if self.wallets_data[address]['eth_sent']['count'] > 0:
+                wallet_datum['avg_coin_sent'] = self.wallets_data[address]['eth_sent']['sum'] / \
+                                                self.wallets_data[address]['eth_sent']['count']
         return pd.DataFrame.from_records(result)
-
-
-if __name__ == '__main__':
-    df = pd.read_csv('../../data/0x38_wallets_pairs.csv')
-    x_wallets = list(df['x'])
-    y_wallets = list(df['y'])
-    # end_block = 28705800
-    end_block = 287058
-
-    transactions_retriever = TransactionsRetriever(wallets_list=x_wallets, end_block=end_block, batch_size=10000,
-                                                   chain_id='0x38')
-
-    transactions_retriever.run()
-    df_output = transactions_retriever.return_result()
-    print(df_output.describe())
