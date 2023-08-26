@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(sys.path[0]))
 import pandas as pd
 from typing import List, Dict
 
-from src.scripts.transactions_retriever import TransactionsFeatures
+from src.scripts.transactions_features import TransactionsFeatures
 
 
 def main():
