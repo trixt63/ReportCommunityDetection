@@ -42,27 +42,32 @@ def encode_transfers_data_by_coins_types(tokens_transfers: pd.DataFrame,
                                          meme_coin_addresses: Set) -> (pd.DataFrame, pd.DataFrame):
     transfers_sent_df = pd.DataFrame.from_dict(data={address: [0, 0, 0] for address in wallet_addresses},
                                                orient='index',
-                                               columns=['transfers', 'stablecoins_transfers', 'memecoins_transfers'])
+                                               columns=['coins_sent', 'stablecoins_sent', 'memecoins_sent'])
 
-    transfers_received_df = deepcopy(transfers_sent_df)
+    transfers_received_df = pd.DataFrame.from_dict(data={address: [0, 0, 0] for address in wallet_addresses},
+                                                   orient='index',
+                                                   columns=['coins_received', 'stablecoins_received', 'memecoins_received'])
 
     for i in tokens_transfers.index:
         if tokens_transfers['from'][i] in wallet_addresses:
             wallet_address = tokens_transfers['from'][i]
             coin_address = tokens_transfers['contract_address'][i]
-            transfers_sent_df.loc[wallet_address, 'transfers'] += 1
+            transfers_sent_df.loc[wallet_address, 'coins_sent'] += 1
             if coin_address in stable_coin_addresses:
-                transfers_sent_df.loc[wallet_address, 'stablecoins_transfers'] += 1
+                transfers_sent_df.loc[wallet_address, 'stablecoins_sent'] += 1
             elif coin_address in meme_coin_addresses:
-                transfers_sent_df.loc[wallet_address, 'memecoins_transfers'] += 1
+                transfers_sent_df.loc[wallet_address, 'memecoins_sent'] += 1
 
         elif tokens_transfers['to'][i] in wallet_addresses:
             wallet_address = tokens_transfers['to'][i]
             coin_address = tokens_transfers['contract_address'][i]
-            transfers_received_df.loc[wallet_address, 'transfers'] += 1
+            transfers_received_df.loc[wallet_address, 'coins_received'] += 1
             if coin_address in stable_coin_addresses:
-                transfers_received_df.loc[wallet_address, 'stablecoins_transfers'] += 1
+                transfers_received_df.loc[wallet_address, 'stablecoins_received'] += 1
             elif coin_address in meme_coin_addresses:
-                transfers_received_df.loc[wallet_address, 'memecoins_transfers'] += 1
+                transfers_received_df.loc[wallet_address, 'memecoins_received'] += 1
+
+        if not (i % 10000):
+            print(f"Progress: {i} / {len(tokens_transfers)}")
 
     return transfers_sent_df, transfers_received_df
