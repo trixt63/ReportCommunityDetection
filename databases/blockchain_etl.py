@@ -29,10 +29,45 @@ class BlockchainETL:
         self.transaction_collection = self.mongo_db[BlockchainETLCollections.transactions]
         self.collector_collection = self.mongo_db[BlockchainETLCollections.collectors]
 
-    # @sync_log_time_exe(tag=TimeExeTag.database)
-    def get_native_transfers_relate_to_addresses(self, addresses):
+    def get_transactions_related_to_addresses(self, addresses, from_block, to_block):
         filter_ = {
-            # "block_number": {"$gte": from_block, "$lt": to_block},
+            "block_number": {"$gte": from_block, "$lt": to_block},
+            "$or": [
+                {"from_address": {'$in': addresses}},
+                {"to_address": {'$in': addresses}}
+            ],
+        }
+        cursor = self.transaction_collection.find(filter_).batch_size(1000)
+        return cursor
+
+    def get_transactions_to_addresses(self, addresses, from_block, to_block):
+        filter_ = {
+            "block_number": {"$gte": from_block, "$lt": to_block},
+            "to_address": {'$in': addresses},
+        }
+        cursor = self.transaction_collection.find(filter_).batch_size(1000)
+        return cursor
+
+    def get_transactions_from_addresses(self, addresses, from_block, to_block):
+        filter_ = {
+            "block_number": {"$gte": from_block, "$lt": to_block},
+            "from_address": {'$in': addresses},
+        }
+        cursor = self.transaction_collection.find(filter_).batch_size(1000)
+        return cursor
+
+    def get_transactions_to_addresses(self, addresses, from_block, to_block):
+        filter_ = {
+            "block_number": {"$gte": from_block, "$lt": to_block},
+            "to_address": {'$in': addresses},
+        }
+        cursor = self.transaction_collection.find(filter_).batch_size(1000)
+        return cursor
+
+    # @sync_log_time_exe(tag=TimeExeTag.database)
+    def get_native_transfers_relate_to_addresses(self, addresses, from_block, to_block):
+        filter_ = {
+            "block_number": {"$gte": from_block, "$lt": to_block},
             "$or": [
                 {"from_address": {'$in': addresses}},
                 {"to_address": {'$in': addresses}}

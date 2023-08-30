@@ -44,3 +44,4 @@ class PostgresDB:
 if __name__ == '__main__':
     postgres = PostgresDB()
     contract_addr = '0x0dfdd7d67c0d2f2db518b7cbfdf66c038d1f0040'
+    print(contract_addr)
