@@ -1,3 +1,4 @@
+from typing import List
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.orm import sessionmaker
@@ -25,21 +26,34 @@ class PostgresDB:
     def close(self):
         self.session.close()
 
-    def get_decimals(self, chain_id, token_addresses):
-        query = text(f"""
-            SELECT * FROM chain_{chain_id}.token_decimals
-            WHERE address = ANY (ARRAY{token_addresses})
-        """)
+    def get_decimals(self, chain_id: str, token_addresses=[]):
+        if token_addresses:
+            query = text(f"""
+                SELECT * FROM chain_{chain_id}.token_decimals
+                WHERE address = ANY (ARRAY{token_addresses})
+            """)
+        else:
+            query = text(f"""
+                SELECT * FROM chain_{chain_id}.token_decimals
+            """)
         result = self.session.execute(query)
+        self.session.commit()
+        return result
+
+    def get_token_decimals(self, chain_id: str, address: str):
+        query = text(f"""
+            SELECT decimals from chain_{chain_id}.token_decimals
+            WHERE address = '{address}'
+        """
+        )
+        result = self.session.execute(query).all()
         self.session.commit()
         return result
 
 
 if __name__ == '__main__':
     postgres = PostgresDB()
-    token_addresses = ['0x55d398326f99059ff775485246999027b3197955',
-                       '0xe9e7cea3dedca5984780bafc599bd69add087d56',
-                       '0xfa82075a6d8f85be9146e64e0f02baa849f8e8fb']
-    _decimals = postgres.get_decimals(chain_id='0x38', token_addresses=token_addresses).all()
-    coins_decimals = {row[0]: row[1] for row in _decimals}
-    print(coins_decimals)
+    contract_addr = '0x0dfdd7d67c0d2f2db518b7cbfdf66c038d1f0040'
+    # contract_addr = '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9'
+    _list_cursor = postgres.get_token_decimals(chain_id='0x38', address=contract_addr)
+    print(_list_cursor)

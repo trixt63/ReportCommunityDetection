@@ -1,6 +1,7 @@
 import os
 import sys
-sys.path.append(os.path.dirname(sys.path[0]))
+print(sys.path)
+sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
 import pandas as pd
 from typing import List, Dict
@@ -16,11 +17,22 @@ def main():
     print("Encode Transactions Features for x")
     x_wallets = list(df['x'])
     x_transactions_features = _encode_transactions_feature(x_wallets, chain_id=chain_id)
-    x_transactions_features.to_csv(f'../../data/transactions_features_{chain_id}_x.csv')
+    x_unique_sent = x_transactions_features.pop('unique_sent')
+    x_unique_received = x_transactions_features.pop('unique_received')
+    x_unique_sent_received = pd.DataFrame([x_transactions_features['address'], x_unique_sent, x_unique_received])
+
+    x_transactions_features.to_csv(f'../../data/transactions_coins_amount_{chain_id}_x.csv')
+    x_unique_sent_received.to_csv(f'../../data/transactions_unique_sent_received_{chain_id}_x.csv')
+
     print("Encode Transactions Features for y")
     y_wallets = list(df['y'])
     y_transactions_features = _encode_transactions_feature(y_wallets, chain_id=chain_id)
-    y_transactions_features.to_csv(f'../../data/transactions_features_{chain_id}_y.csv')
+    _y_unique_sent = y_transactions_features.pop('unique_sent')
+    _y_unique_received = y_transactions_features.pop('unique_received')
+    y_unique_sent_received = pd.DataFrame([y_transactions_features['address'], _y_unique_sent, _y_unique_received])
+
+    y_transactions_features.to_csv(f'../../data/transactions_coins_amount_{chain_id}_y.csv')
+    y_unique_sent_received.to_csv(f'../../data/transactions_unique_sent_received_{chain_id}_y.csv')
 
 
 def _encode_transactions_feature(wallets_list, chain_id) -> pd.DataFrame:
@@ -33,4 +45,5 @@ def _encode_transactions_feature(wallets_list, chain_id) -> pd.DataFrame:
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    print("Hello")

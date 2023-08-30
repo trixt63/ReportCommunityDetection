@@ -21,6 +21,7 @@ class MongoDB:
         self._users_col = self._db['users']
 
         self._transactions_col = self._db[f'{chain_id}_transactions']
+        self._token_transfers_col = self._db['token_transfers']
 
     #######################
     #  Generate dataset   #
@@ -161,3 +162,16 @@ class MongoDB:
         token0 = lp_contract.get('token0')
         token1 = lp_contract.get('token1')
         return token0, token1
+
+    def export_transfer_events(self, data: List[Dict]):
+        bulk_operation = list()
+
+        for datum in data:
+            block_number = datum['block_number']
+            tx_hash = datum['transaction_hash']
+            log_index = datum['log_index']
+            bulk_operation.append(UpdateOne(filter={'_id': f"{block_number}_{tx_hash}_{log_index}"},
+                                            update={'$set': datum},
+                                            upsert=True))
+
+        self._token_transfers_col.bulk_write(bulk_operation)
