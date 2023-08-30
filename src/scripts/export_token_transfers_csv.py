@@ -10,6 +10,9 @@ from utils.format_utils import convert_tx_timestamp
 
 
 def main():
+    """
+    Export data from Dune csv to MongoDB
+    """
     chain_id = '0x38'
     mongodb = MongoDB(chain_id=chain_id)
     postgres = PostgresDB()

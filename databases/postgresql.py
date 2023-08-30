@@ -40,20 +40,7 @@ class PostgresDB:
         self.session.commit()
         return result
 
-    def get_token_decimals(self, chain_id: str, address: str):
-        query = text(f"""
-            SELECT decimals from chain_{chain_id}.token_decimals
-            WHERE address = '{address}'
-        """
-        )
-        result = self.session.execute(query).all()
-        self.session.commit()
-        return result
-
 
 if __name__ == '__main__':
     postgres = PostgresDB()
     contract_addr = '0x0dfdd7d67c0d2f2db518b7cbfdf66c038d1f0040'
-    # contract_addr = '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9'
-    _list_cursor = postgres.get_token_decimals(chain_id='0x38', address=contract_addr)
-    print(_list_cursor)
