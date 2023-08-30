@@ -1,4 +1,5 @@
 #ipykernel
+click==8.0.1
 multithread-parallel-processing==1.0.0
 notebook
 pandas

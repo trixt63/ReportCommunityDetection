@@ -5,15 +5,15 @@ from csv import DictReader
 from typing import Dict, List
 from pandas import read_csv, DataFrame
 
-from databases.mongodb import MongoDB
+from constants.network_constants import Chains
 from databases.blockchain_etl import BlockchainETL
 from multithread_processing.base_job import BaseJob
 from utils.logger_utils import get_logger
 
-logger = get_logger('Grid Search Subgraph Radius')
+logger = get_logger('Grid Search Subgraph Radius Job')
 
 
-class GridSearchSubgraphRadius(BaseJob):
+class GridSearchSubgraphRadiusJob(BaseJob):
     def __init__(self, chain_id, start_block, end_block, radius,
                  batch_size=10000, max_workers=8):
         self.chain_id = chain_id
@@ -21,8 +21,12 @@ class GridSearchSubgraphRadius(BaseJob):
         self.end_block = end_block
         self.work_iterable = list(range(start_block, end_block+1))
 
-        self.mongo = MongoDB()
-        self.blockchain_etl = BlockchainETL()
+        if chain_id == '0x38':
+            self.blockchain_etl = BlockchainETL()
+        else:
+            _chain_name = Chains.names[chain_id]
+            self.blockchain_etl = BlockchainETL(db_prefix=_chain_name)
+
         super().__init__(work_iterable=self.work_iterable,
                          batch_size=batch_size,
                          max_workers=max_workers)
@@ -76,11 +80,11 @@ class GridSearchSubgraphRadius(BaseJob):
 
     def _end(self):
         super()._end()
-        self.wallets_pairs_df.to_csv(f'../../data/gridsearch_subgraph_size_{self.radius}.csv')
+        self.wallets_pairs_df.to_csv(f'../../data/gridsearch_subgraph_{self.chain_id}_radius_{self.radius}.csv')
 
 
 if __name__ == '__main__':
-    job = GridSearchSubgraphRadius(
+    job = GridSearchSubgraphRadiusJob(
         chain_id='0x38',
         start_block=26925539,
         end_block=28195220,
